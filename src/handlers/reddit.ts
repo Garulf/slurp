@@ -1,13 +1,8 @@
 import { requestUrl } from "obsidian";
 import { RedditAuth, REDDIT_USER_AGENT } from "../lib/reddit-auth";
-import type { IArticle, IRedditSettings } from "../types";
+import type { IArticle, IRedditSettings, ISiteHandler } from "../types";
 import { buildRedditArticle } from "./reddit-article";
 import { extractCanonicalPostUrl, parseRedditUrl } from "./reddit-url";
-
-export interface ISiteHandler {
-    matches(url: string): boolean;
-    resolve(url: string): Promise<IArticle>;
-}
 
 export class RedditHandler implements ISiteHandler {
     private auth: RedditAuth;

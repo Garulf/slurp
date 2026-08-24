@@ -12,23 +12,31 @@ export async function slurpPipeline(
 	const context = { url };
 	log.debug("slurping", { url });
 
-	const doc = parseHtml(await fetchHtml(url));
-	const processedDoc = await runSlurpProcessors(doc, processors.document, context);
+	const handler = options.handlers?.find((h) => h.matches(url));
 
-	const article: IArticle = {
-		slurpedTime: new Date(),
-		tags: [],
-		...parsePage(processedDoc)
-	};
-	log.debug("parsed page", article);
+	let mergedMetadata: IArticle;
+	if (handler) {
+		log.debug("using site handler", { url });
+		mergedMetadata = await handler.resolve(url);
+	} else {
+		const doc = parseHtml(await fetchHtml(url));
+		const processedDoc = await runSlurpProcessors(doc, processors.document, context);
 
-	const parsedMetadata = parseMetadata(processedDoc, fmProps, tagSettings.prefix, tagSettings.case);
-	log.debug("parsed metadata", parsedMetadata);
+		const article: IArticle = {
+			slurpedTime: new Date(),
+			tags: [],
+			...parsePage(processedDoc)
+		};
+		log.debug("parsed page", article);
 
-	const mergedMetadata = mergeMetadata(article, parsedMetadata);
-	log.debug("merged metadata", parsedMetadata);
+		const parsedMetadata = parseMetadata(processedDoc, fmProps, tagSettings.prefix, tagSettings.case);
+		log.debug("parsed metadata", parsedMetadata);
 
-	let resultArticle: IArticle = { ...mergedMetadata, link: url };
+		mergedMetadata = mergeMetadata(article, parsedMetadata);
+		log.debug("merged metadata", parsedMetadata);
+	}
+
+	let resultArticle: IArticle = { ...mergedMetadata, link: handler ? mergedMetadata.link ?? url : url };
 	resultArticle = await runSlurpProcessors(resultArticle, processors.article, context);
 
 	if (frontmatterOnly) {

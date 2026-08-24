@@ -13,17 +13,21 @@ import { slurpPipeline } from './src/pipeline';
 import { DEFAULT_SLURP_PROCESSORS } from './src/processors';
 import { DEFAULT_POST_PROCESSORS, runPostProcessors } from './src/postprocessors';
 import { SlurpSettingsTab } from './src/settings';
+import { RedditHandler } from './src/handlers/reddit';
 import type {
-	IArticle, IFrontMatterSettings, IFrontMatterTagSettings, ISettings, ISettingsV0, TFrontMatterProps
+	IArticle, IFrontMatterSettings, IFrontMatterTagSettings, ISettings, ISettingsV0, ISiteHandler, TFrontMatterProps
 } from './src/types';
 
 export default class SlurpPlugin extends Plugin {
 	settings!: ISettings;
 	fmProps!: TFrontMatterProps;
 	logger!: Logger;
+	siteHandlers!: ISiteHandler[];
 
 	async onload() {
 		await this.loadSettings();
+
+		this.siteHandlers = [new RedditHandler(() => this.settings.reddit)];
 
 		this.addSettingTab(new SlurpSettingsTab(this.app, this));
 
@@ -148,7 +152,8 @@ export default class SlurpPlugin extends Plugin {
 				fmProps: this.fmProps,
 				tagSettings: this.settings.fm.tags,
 				frontmatterOnly,
-				processors: DEFAULT_SLURP_PROCESSORS
+				processors: DEFAULT_SLURP_PROCESSORS,
+				handlers: this.siteHandlers
 			});
 			await this.slurpNewNoteCallback(article);
 		} catch (err) {

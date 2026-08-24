@@ -52,6 +52,11 @@ export interface FormatterArgs { [s: string]: string; }
 
 
 
+export interface ISiteHandler {
+    matches(url: string): boolean;
+    resolve(url: string): Promise<IArticle>;
+}
+
 export interface ISlurpProcessorContext {
     readonly url: string;
 }
@@ -72,6 +77,7 @@ export interface ISlurpPipelineOptions {
     readonly tagSettings: IFrontMatterTagSettings;
     readonly frontmatterOnly: boolean;
     readonly processors: ISlurpProcessors;
+    readonly handlers?: readonly ISiteHandler[];
 }
 export interface IPostProcessorContext {
     readonly article: IArticle;
