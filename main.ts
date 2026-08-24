@@ -96,6 +96,10 @@ export default class SlurpPlugin extends Plugin {
 			...DEFAULT_SETTINGS.images,
 			...(this.settings.images ?? {})
 		};
+		this.settings.reddit = {
+			...DEFAULT_SETTINGS.reddit,
+			...(this.settings.reddit ?? {})
+		};
 	}
 
 	migrateObjToMap<K, V>(obj: { [key: string]: V; }) {

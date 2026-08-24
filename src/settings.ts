@@ -89,6 +89,42 @@ export class SlurpSettingsTab extends PluginSettingTab {
             );
 
 
+        new Setting(containerEl).setName('Reddit').setHeading();
+
+        new Setting(containerEl)
+            .setName('Client ID')
+            .setDesc('From a "script" app created at reddit.com/prefs/apps. Required to slurp Reddit posts.')
+            .addText((text) => text
+                .setValue(this.plugin.settings.reddit.clientId)
+                .onChange(async (val) => {
+                    this.plugin.settings.reddit.clientId = val.trim();
+                    await this.plugin.saveSettings();
+                })
+            );
+
+        new Setting(containerEl)
+            .setName('Client secret')
+            .addText((text) => {
+                text.inputEl.type = 'password';
+                text.setValue(this.plugin.settings.reddit.clientSecret)
+                    .onChange(async (val) => {
+                        this.plugin.settings.reddit.clientSecret = val.trim();
+                        await this.plugin.saveSettings();
+                    });
+            });
+
+        new Setting(containerEl)
+            .setName('Top comments')
+            .setDesc('Number of top-level comments to include. 0 disables comments.')
+            .addText((text) => text
+                .setValue(this.plugin.settings.reddit.topComments.toString())
+                .onChange(async (val) => {
+                    const n = parseInt(val, 10);
+                    this.plugin.settings.reddit.topComments = Number.isNaN(n) || n < 0 ? 10 : n;
+                    await this.plugin.saveSettings();
+                })
+            );
+
         new Setting(containerEl).setName('Properties').setHeading();
 
         new Setting(containerEl)

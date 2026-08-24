@@ -98,6 +98,11 @@ export const DEFAULT_SETTINGS: ISettings = {
         folder: '_files',
         setBanner: false
     },
+    reddit: {
+        clientId: "",
+        clientSecret: "",
+        topComments: 10
+    },
     fm: {
         includeEmpty: false,
         tags: {

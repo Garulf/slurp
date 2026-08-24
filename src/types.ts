@@ -133,11 +133,18 @@ export interface IImageSettings {
     setBanner: boolean;
 }
 
+export interface IRedditSettings {
+    clientId: string;
+    clientSecret: string;
+    topComments: number;
+}
+
 export interface ISettings {
     settingsVersion: number;
     defaultPath: string;
     frontmatterOnly: boolean;
     images: IImageSettings;
+    reddit: IRedditSettings;
     fm: IFrontMatterSettings;
     logs: ILogSettings;
 }

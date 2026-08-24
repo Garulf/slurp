@@ -11,6 +11,7 @@ jest.mock('../src/const', () => ({
         defaultPath: '',
         frontmatterOnly: false,
         images: { saveLocally: false, folder: '_files', setBanner: false },
+        reddit: { clientId: '', clientSecret: '', topComments: 10 },
         fm: { includeEmpty: false, tags: { parse: true, prefix: '', case: 'iKebab-case' }, properties: {} },
         logs: { debug: true, logPath: 'slurp-logs' },
     },
@@ -85,6 +86,7 @@ describe('settings migration', () => {
             defaultPath: 'Saved',
             frontmatterOnly: false,
             images: { saveLocally: true },
+            reddit: { clientId: '', clientSecret: '', topComments: 10 },
             fm: {},
             logs: {},
         } as unknown as ISettings;
@@ -102,6 +104,7 @@ describe('settings migration', () => {
             defaultPath: 'Saved',
             frontmatterOnly: false,
             images: { saveLocally: true, folder: 'assets', setBanner: true },
+            reddit: { clientId: '', clientSecret: '', topComments: 10 },
             fm: {} as never,
             logs: {} as never,
         };
