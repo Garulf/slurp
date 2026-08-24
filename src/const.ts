@@ -73,6 +73,22 @@ export const FRONT_MATTER_ITEM_DEFAULTS: TFrontMatterPropDefaults = new Map<stri
         description: 'Page title as seen in the browser, falling back to the title presented in metadata.',
         metaFields: ['og:title', 'twitter:title']
     },
+    {
+        defaultIdx: 12, id: "subreddit", defaultKey: "subreddit",
+        description: 'Subreddit a Reddit post belongs to, eg: "r/ObsidianMD".'
+    },
+    {
+        defaultIdx: 13, id: "score", defaultKey: "score",
+        description: 'Score (upvotes minus downvotes) of a Reddit post at slurp time.'
+    },
+    {
+        defaultIdx: 14, id: "commentCount", defaultKey: "comments",
+        description: 'Total comment count of a Reddit post at slurp time.'
+    },
+    {
+        defaultIdx: 15, id: "flair", defaultKey: "flair",
+        description: 'Link flair of a Reddit post, if any.'
+    },
 ].map((item) => [item.id, item]));
 
 const FRONT_MATTER_ITEM_DEFAULT_SETTINGS = Object.fromEntries(
