@@ -1,4 +1,5 @@
 import { requestUrl } from "obsidian";
+import { logger } from "./logger";
 import type { IRedditSettings } from "../types";
 
 export const REDDIT_USER_AGENT = "obsidian:slurp-reddit-fork:v1.0 (personal use)";
@@ -38,9 +39,16 @@ export class RedditAuth {
 
         const accessToken = response.status === 200 ? response.json?.access_token : undefined;
         if (!accessToken) {
+            logger().debug("reddit token request failed", { status: response.status, body: response.text });
+
+            if (response.status === 401 || response.status === 403) {
+                throw new RedditAuthError(
+                    `Reddit rejected the credentials (HTTP ${response.status}). ` +
+                    'Check the client ID and secret in Slurp settings.');
+            }
             throw new RedditAuthError(
-                `Reddit rejected the credentials (HTTP ${response.status}). ` +
-                'Check the client ID and secret in Slurp settings.');
+                `Reddit's token endpoint returned HTTP ${response.status}. ` +
+                'This is usually transient; wait a moment and try again.');
         }
 
         this.token = accessToken;

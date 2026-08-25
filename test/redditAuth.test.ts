@@ -44,9 +44,16 @@ describe('RedditAuth', () => {
         expect(mockRequest).toHaveBeenCalledTimes(2);
     });
 
-    it('surfaces rejection as RedditAuthError', async () => {
-        mockRequest.mockResolvedValue({ status: 401, json: {} });
+    it('surfaces a 401/403 as a credentials problem', async () => {
+        mockRequest.mockResolvedValue({ status: 401, json: {}, text: '' });
         const auth = new RedditAuth(() => settings);
         await expect(auth.getToken()).rejects.toThrow(/rejected the credentials/);
+    });
+
+    it('surfaces a 5xx as a transient reddit-side error, not a credentials problem', async () => {
+        mockRequest.mockResolvedValue({ status: 503, json: {}, text: '<html>unavailable</html>' });
+        const auth = new RedditAuth(() => settings);
+        await expect(auth.getToken()).rejects.toThrow(/token endpoint returned HTTP 503/);
+        await expect(auth.getToken()).rejects.not.toThrow(/credentials/);
     });
 });
