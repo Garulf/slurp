@@ -1,15 +1,13 @@
 import { requestUrl } from "obsidian";
-import { RedditAuth, REDDIT_USER_AGENT } from "../lib/reddit-auth";
+import { RedditSession, REDDIT_BROWSER_USER_AGENT } from "../lib/reddit-session";
 import type { IArticle, IRedditSettings, ISiteHandler } from "../types";
 import { buildRedditArticle } from "./reddit-article";
 import { extractCanonicalPostUrl, parseRedditUrl } from "./reddit-url";
 
 export class RedditHandler implements ISiteHandler {
-    private auth: RedditAuth;
+    private session = new RedditSession();
 
-    constructor(private getSettings: () => IRedditSettings) {
-        this.auth = new RedditAuth(getSettings);
-    }
+    constructor(private getSettings: () => IRedditSettings) { }
 
     matches(url: string): boolean {
         return parseRedditUrl(url).kind !== "not-reddit";
@@ -17,8 +15,8 @@ export class RedditHandler implements ISiteHandler {
 
     async resolve(url: string): Promise<IArticle> {
         const id36 = await this.resolvePostId(url);
-        const response = await this.fetchListing(id36);
-        return buildRedditArticle(response, this.getSettings().topComments);
+        const listing = await this.fetchListing(id36);
+        return buildRedditArticle(listing, this.getSettings().topComments);
     }
 
     private async resolvePostId(url: string): Promise<string> {
@@ -38,7 +36,7 @@ export class RedditHandler implements ISiteHandler {
     private async resolveShareLink(url: string): Promise<string> {
         const response = await requestUrl({
             url,
-            headers: { "User-Agent": REDDIT_USER_AGENT },
+            headers: { "User-Agent": REDDIT_BROWSER_USER_AGENT },
             throw: false,
         });
         const canonical = response.text ? extractCanonicalPostUrl(response.text) : null;
@@ -49,26 +47,31 @@ export class RedditHandler implements ISiteHandler {
             "Open the post in a browser and share its full URL instead.");
     }
 
-    private async fetchListing(id36: string, isRetry = false): Promise<unknown> {
-        const token = await this.auth.getToken();
+    private async fetchListing(id36: string): Promise<unknown> {
+        const cookie = await this.session.getCookieHeader();
+        const headers: Record<string, string> = { "User-Agent": REDDIT_BROWSER_USER_AGENT };
+        if (cookie) headers.Cookie = cookie;
+
         const response = await requestUrl({
-            url: `https://oauth.reddit.com/comments/${id36}?raw_json=1&limit=100&sort=top`,
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "User-Agent": REDDIT_USER_AGENT,
-            },
+            url: `https://www.reddit.com/comments/${id36}.json?raw_json=1&limit=100&sort=top`,
+            headers,
             throw: false,
         });
 
-        if (response.status === 401 && !isRetry) {
-            this.auth.invalidate();
-            return this.fetchListing(id36, true);
-        }
         if (response.status === 429)
             throw new Error("Reddit is rate limiting requests. Try again in a minute.");
-        if (response.status !== 200 || !Array.isArray(response.json))
+        if (response.status !== 200)
             throw new Error(`Reddit API request failed (HTTP ${response.status}).`);
 
-        return response.json;
+        let json: unknown;
+        try {
+            json = response.json;
+        } catch {
+            throw new Error("Reddit returned an unexpected (non-JSON) response.");
+        }
+        if (!Array.isArray(json))
+            throw new Error("Reddit returned an unexpected response for this post.");
+
+        return json;
     }
 }

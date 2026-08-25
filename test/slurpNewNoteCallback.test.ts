@@ -13,7 +13,7 @@ jest.mock('../src/const', () => ({
         defaultPath: 'Slurped Pages',
         frontmatterOnly: false,
         images: { saveLocally: false, folder: '_files', setBanner: false },
-        reddit: { clientId: '', clientSecret: '', topComments: 10 },
+        reddit: { topComments: 10 },
         fm: { includeEmpty: false, tags: { parse: true, prefix: '', case: 'iKebab-case' }, properties: {} },
         logs: { debug: false, logPath: '_logs' },
     },
@@ -60,7 +60,7 @@ const settings = (saveLocally: boolean, setBanner = false): ISettings => ({
     defaultPath: 'Slurped Pages',
     frontmatterOnly: false,
     images: { saveLocally, folder: '_files', setBanner },
-    reddit: { clientId: '', clientSecret: '', topComments: 10 },
+    reddit: { topComments: 10 },
     fm: {
         includeEmpty: false,
         tags: { parse: true, prefix: '', case: 'iKebab-case' },

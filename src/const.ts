@@ -115,8 +115,6 @@ export const DEFAULT_SETTINGS: ISettings = {
         setBanner: false
     },
     reddit: {
-        clientId: "",
-        clientSecret: "",
         topComments: 10
     },
     fm: {

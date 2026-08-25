@@ -140,8 +140,6 @@ export interface IImageSettings {
 }
 
 export interface IRedditSettings {
-    clientId: string;
-    clientSecret: string;
     topComments: number;
 }
 

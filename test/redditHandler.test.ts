@@ -4,7 +4,7 @@ import { requestUrl } from 'obsidian';
 import { RedditHandler } from '../src/handlers/reddit';
 
 const mockRequest = requestUrl as unknown as jest.Mock;
-const settings = { clientId: 'id', clientSecret: 'secret', topComments: 10 };
+const settings = { topComments: 10 };
 
 const postUrl = 'https://www.reddit.com/r/ObsidianMD/comments/1g4g2xu/a_post_title/';
 const shareUrl = 'https://www.reddit.com/r/ObsidianMD/s/AbCdEf123';
@@ -27,11 +27,17 @@ const listing = [
     { kind: 'Listing', data: { children: [] } },
 ];
 
-const tokenResponse = { status: 200, json: { access_token: 'tok', expires_in: 3600 } };
-
 beforeEach(() => mockRequest.mockReset());
 
 const handler = () => new RedditHandler(() => settings);
+
+const dispatchByUrl = (jsonResponse: { status: number; json?: unknown; text?: string }) => {
+    mockRequest.mockImplementation((opts: { url: string }) => {
+        if (opts.url === 'https://old.reddit.com/')
+            return Promise.resolve({ status: 200, headers: { 'set-cookie': 'loid=abc123; Path=/' }, text: '' });
+        return Promise.resolve(jsonResponse);
+    });
+};
 
 describe('RedditHandler.matches', () => {
     it.each([postUrl, shareUrl, 'https://www.reddit.com/r/ObsidianMD/'])('claims %s', (url) => {
@@ -44,33 +50,29 @@ describe('RedditHandler.matches', () => {
 });
 
 describe('RedditHandler.resolve', () => {
-    const dispatchByUrl = (comments: { status: number; json?: unknown; text?: string }) => {
-        mockRequest.mockImplementation((opts: { url: string }) => {
-            if (opts.url.includes('/api/v1/access_token')) return Promise.resolve(tokenResponse);
-            return Promise.resolve(comments);
-        });
-    };
-
-    it('fetches the post via oauth and returns the article', async () => {
+    it('fetches the post anonymously and returns the article', async () => {
         dispatchByUrl({ status: 200, json: listing });
         const article = await handler().resolve(postUrl);
         expect(article.title).toBe('A post title');
         const apiCall = mockRequest.mock.calls.find(
-            ([opts]) => (opts as { url: string }).url.startsWith('https://oauth.reddit.com/comments/1g4g2xu'));
+            ([opts]) => (opts as { url: string }).url.startsWith('https://www.reddit.com/comments/1g4g2xu'));
         expect(apiCall).toBeDefined();
-        expect((apiCall![0] as { headers: Record<string, string> }).headers.Authorization).toBe('Bearer tok');
+        const opts = apiCall![0] as { headers: Record<string, string> };
+        expect(opts.headers.Cookie).toBe('loid=abc123');
+        expect(opts.headers['User-Agent']).toContain('Mozilla');
     });
 
-    it('retries once after a 401', async () => {
-        let apiCalls = 0;
+    it('proceeds without a cookie if session priming yields none', async () => {
         mockRequest.mockImplementation((opts: { url: string }) => {
-            if (opts.url.includes('/api/v1/access_token')) return Promise.resolve(tokenResponse);
-            apiCalls += 1;
-            return Promise.resolve(apiCalls === 1 ? { status: 401, json: {} } : { status: 200, json: listing });
+            if (opts.url === 'https://old.reddit.com/')
+                return Promise.resolve({ status: 200, headers: {}, text: '' });
+            return Promise.resolve({ status: 200, json: listing });
         });
         const article = await handler().resolve(postUrl);
         expect(article.title).toBe('A post title');
-        expect(apiCalls).toBe(2);
+        const apiCall = mockRequest.mock.calls.find(
+            ([opts]) => (opts as { url: string }).url.startsWith('https://www.reddit.com/comments/1g4g2xu'));
+        expect((apiCall![0] as { headers: Record<string, string> }).headers.Cookie).toBeUndefined();
     });
 
     it('reports rate limiting distinctly', async () => {
@@ -83,13 +85,27 @@ describe('RedditHandler.resolve', () => {
         await expect(handler().resolve(postUrl)).rejects.toThrow(/HTTP 500/);
     });
 
+    it('reports a non-JSON 200 response clearly', async () => {
+        mockRequest.mockImplementation((opts: { url: string }) => {
+            if (opts.url === 'https://old.reddit.com/')
+                return Promise.resolve({ status: 200, headers: {}, text: '' });
+            return Promise.resolve({
+                status: 200,
+                get json(): unknown { throw new SyntaxError('Unexpected token'); },
+                text: '<html>not json</html>',
+            });
+        });
+        await expect(handler().resolve(postUrl)).rejects.toThrow(/unexpected \(non-JSON\) response/);
+    });
+
     it('resolves share links via the canonical url', async () => {
         mockRequest.mockImplementation((opts: { url: string }) => {
             if (opts.url === shareUrl) return Promise.resolve({
                 status: 200,
                 text: `<meta property="og:url" content="${postUrl}"/>`,
             });
-            if (opts.url.includes('/api/v1/access_token')) return Promise.resolve(tokenResponse);
+            if (opts.url === 'https://old.reddit.com/')
+                return Promise.resolve({ status: 200, headers: { 'set-cookie': 'loid=abc123; Path=/' }, text: '' });
             return Promise.resolve({ status: 200, json: listing });
         });
         const article = await handler().resolve(shareUrl);

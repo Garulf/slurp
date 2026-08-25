@@ -68,7 +68,7 @@ const makeSettings = (folder = '_files'): ISettings => ({
     defaultPath: 'Slurped Pages',
     frontmatterOnly: false,
     images: { saveLocally: true, folder, setBanner: false },
-    reddit: { clientId: '', clientSecret: '', topComments: 10 },
+    reddit: { topComments: 10 },
     fm: {
         includeEmpty: false,
         tags: { parse: true, prefix: '', case: 'iKebab-case' },

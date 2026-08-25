@@ -15,7 +15,7 @@ const settings = (saveLocally: boolean, setBanner: boolean): ISettings => ({
     defaultPath: 'Slurped Pages',
     frontmatterOnly: false,
     images: { saveLocally, folder: '_files', setBanner },
-    reddit: { clientId: '', clientSecret: '', topComments: 10 },
+    reddit: { topComments: 10 },
     fm: {
         includeEmpty: false,
         tags: { parse: true, prefix: '', case: 'iKebab-case' },
